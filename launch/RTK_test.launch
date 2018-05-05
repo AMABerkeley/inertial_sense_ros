@@ -1,0 +1,16 @@
+<launch>
+	<node name="RTK_rover" type="inertial_sense_node" pkg="inertial_sense" output="screen">
+		<param name="RTK_rover" value="true"/>
+		<param name="port" value="/dev/ttyUSB0"/>
+		<param name="navigation_dt_ms" value="4"/>
+		<param name="stream_RTK_info" value="true"/>
+		<param name="stream_GPS" value="true"/>
+	</node>
+
+	<node name="RTK_base" type="inertial_sense_node" pkg="inertial_sense" output="screen">
+		<param name="RTK_base" value="true"/>
+		<param name="port" value="/dev/ttyUSB1"/>
+		<param name="navigation_dt_ms" value="4"/>
+		<param name="stream_INS" value="false"/>
+	</node>
+</launch>
