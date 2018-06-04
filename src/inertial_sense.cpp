@@ -84,7 +84,7 @@ InertialSenseROS::InertialSenseROS() :
   {
     ROS_INFO("InertialSense: Configured as RTK Rover");
     RTK_state_ = RTK_ROVER;
-    set_flash_config(offsetof(nvm_flash_cfg_t, RTKCfgBits), RTK_CFG_BITS_RTK_ROVER);
+    set_flash_config(offsetof(nvm_flash_cfg_t, RTKCfgBits), RTK_CFG_BITS_GPS1_RTK_ROVER);
     RTK_sub_ = nh_.subscribe("RTK", 10, &InertialSenseROS::RTKCorrection_callback, this);
   }
   else if (RTK_base)
@@ -100,7 +100,8 @@ InertialSenseROS::InertialSenseROS() :
   /// DATA STREAMS CONFIGURATION
   /////////////////////////////////////////////////////////
   
-  uint32_t rmcBits = RMC_BITS_GPS_NAV; // we always need GPS for time synchronization
+  uint32_t rmcBits = RMC_BITS_PRESET;
+  rmcBits |= RMC_BITS_GPS1_NAV; // we always need GPS for time synchronization
   nh_private_.param<bool>("stream_INS", INS_.enabled, true);
   if (INS_.enabled)
   {
@@ -162,11 +163,8 @@ InertialSenseROS::InertialSenseROS() :
   if (RTK_state_ == RTK_ROVER && RTK_info_.enabled)
   {
     RTK_info_.pub = nh_.advertise<inertial_sense::RTKInfo>("RTK/info", 1);
-    messageSize = is_comm_get_data(&comm_, DID_GPS_RTK_MISC, 0, 0, 10);
     rmcBits |= RMC_BITS_GPS_RTK_MISC;
     rmcBits |= RMC_BITS_GPS_RTK_NAV;
-    rmcBits |= RMC_BITS_PRESET;
-    serialPortWrite(&serial_, message_buffer_, messageSize);
   }
   
   messageSize = is_comm_get_data_rmc(&comm_, rmcBits);
@@ -360,6 +358,9 @@ void InertialSenseROS::GPS_callback(const gps_nav_t * const msg)
     gps_msg.linear_velocity.x = msg->velNed[0];
     gps_msg.linear_velocity.y = msg->velNed[1];
     gps_msg.linear_velocity.z = msg->velNed[2];
+    gps_msg.arRatio = msg->arRatio;
+    gps_msg.distanceToBase = msg->distanceToBase;
+    gps_msg.differentialAge = msg->differentialAge;
     GPS_.pub.publish(gps_msg);
   }
   GPS_week_ = msg->week;
@@ -392,8 +393,12 @@ void InertialSenseROS::update()
       IMU_callback((dual_imu_t*) message_buffer_);
       break;
     case DID_GPS_NAV:
-	case DID_GPS_RTK_NAV:
-      GPS_callback((gps_nav_t*) message_buffer_);
+      if (RTK_state_ != RTK_ROVER)
+        GPS_callback((gps_nav_t*) message_buffer_);
+      break;
+    case DID_GPS_RTK_NAV:
+      if (RTK_state_ == RTK_ROVER)
+        GPS_callback((gps_nav_t*) message_buffer_);
       break;
     case DID_GPS1_SAT:
       GPS_Info_callback((gps_sat_t*) message_buffer_);
@@ -613,7 +618,7 @@ void InertialSenseROS::ublox_callback(uint8_t *buffer)
 
 void InertialSenseROS::RTKCorrection_callback(const inertial_sense::RTKCorrectionConstPtr &msg)
 {
-  uint32_t len = (msg->data[5] << 8 | msg->data[4]) + 6;
+  uint32_t len = msg->data.size();
   // copy the data to our local buffer
   for (int i =0; i < len; i++)
   {
