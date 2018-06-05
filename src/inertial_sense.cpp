@@ -194,14 +194,22 @@ void InertialSenseROS::set_vector_flash_config(std::string param_name, uint32_t 
   std::vector<double> tmp(size,0);
   T v[size];
   if (nh_private_.hasParam(param_name))
-    nh_private_.getParam(param_name, tmp);
-  for (int i = 0; i < size; i++)
   {
-    v[i] = tmp[i];
+	  nh_private_.getParam(param_name, tmp);
+	  std::string info_string = "[InertialSense] Setting Parameter" + param_name + "[";
+	  for (int i = 0; i < size; i++)
+	  {
+		if (i != 0)
+			info_string += ", ";
+		v[i] = tmp[i];
+		info_string += std::to_string(v[i]);
+	  }
+	  info_string += "]";
+	  ROS_INFO("%s", info_string.c_str());	  
+	  
+	  int messageSize = is_comm_set_data(&comm_, DID_FLASH_CONFIG, offset, sizeof(v), v);
+	  serialPortWrite(&serial_, message_buffer_, messageSize);
   }
-  
-  int messageSize = is_comm_set_data(&comm_, DID_FLASH_CONFIG, offset, sizeof(v), v);
-  serialPortWrite(&serial_, message_buffer_, messageSize);
 }
 
 template <typename T>
