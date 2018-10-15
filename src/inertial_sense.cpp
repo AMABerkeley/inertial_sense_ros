@@ -9,7 +9,7 @@ InertialSenseROS::InertialSenseROS() :
   nh_(), nh_private_("~"), initialized_(false)
 {
   nh_private_.param<std::string>("port", port_, "/dev/ttyUSB0");
-  nh_private_.param<int>("baudrate", baudrate_, 3000000);
+  nh_private_.param<int>("baudrate", baudrate_, 921600);
   nh_private_.param<std::string>("frame_id", frame_id_, "body");
 
   /// Connect to the uINS
