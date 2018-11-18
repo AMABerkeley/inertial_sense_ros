@@ -1,3 +1,0 @@
-[submodule "lib/inertialsense_serial_protocol"]
-	path = lib/inertialsense_serial_protocol
-	url = https://github.com/inertialsense/inertialsense_serial_protocol.git
