@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(inertial_sense_ros)
+project(inertial_sense)
 
 find_package(catkin REQUIRED COMPONENTS
+  message_generation
   roscpp
   rospy
   sensor_msgs
   geometry_msgs
-  message_generation
 )
 find_package(Threads)
 
@@ -29,7 +29,7 @@ generate_messages(
 
 catkin_package(
     INCLUDE_DIRS include
-    CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs
+    CATKIN_DEPENDS message_runtime roscpp sensor_msgs geometry_msgs
 )
 
 SET(IS_SP_DIR lib/inertialsense_serial_protocol)
@@ -50,7 +50,8 @@ set(SERIAL_SRC
     ${SERIAL_DIR}/serialPortPlatform.h
 )
 
-include_directories(include
+include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
   ${IS_SP_DIR}
   ${SERIAL_DIR}
